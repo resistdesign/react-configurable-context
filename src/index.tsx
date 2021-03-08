@@ -1,109 +1,52 @@
-import React, {
-  Context,
-  createContext,
-  FC,
-  PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import React, { Consumer, Context, createContext, FC, ProviderProps, useContext, useState } from 'react';
 
-export type BaseContextType = Record<any, any>;
+export type BaseConfigurableContextType = Record<any, any>;
+export type ConfigContextChangeHandler<T extends BaseConfigurableContextType> = ((newValue: T) => void) | undefined;
 
-export type ConfigurableContextSetter<ContextType extends BaseContextType> = (value: ContextType) => void;
-export type ConfigurableContextPropSetter<ContextType extends BaseContextType> = (
-  name: keyof ContextType,
-  value: ContextType[keyof ContextType]
-) => void;
+export interface ConfigurableContext<T extends BaseConfigurableContextType> {
+  ValueContext: Context<T>;
+  ConfigContext: Context<ConfigContextChangeHandler<T>>;
+  Consumer: Consumer<T>;
+  Provider: FC<ProviderProps<T>>;
+}
 
-export type ConfigurableContextContextType<ContextType extends BaseContextType> = Map<
-  Context<ContextType>,
-  ConfigurableContextSetter<ContextType>
->;
+export const createConfigurableContext = <T extends BaseConfigurableContextType>(
+  defaultValue: T
+): ConfigurableContext<T> => {
+  const ValueContext = createContext<T>(defaultValue);
+  const { Consumer, Provider } = ValueContext;
+  const ConfigContext = createContext<ConfigContextChangeHandler<T>>(undefined);
+  const { Provider: ConfigProvider } = ConfigContext;
+  const EnhancedValueProvider: FC<ProviderProps<T>> = ({ value, children, ...other }) => {
+    const [configurableValue, setConfigurableValue] = useState<T>(value);
 
-export const ConfigurableContextContext = createContext<ConfigurableContextContextType<BaseContextType> | undefined>(
-  undefined
-);
-const { Provider: ConfigurableContextContextProvider } = ConfigurableContextContext;
+    return (
+      <Provider value={configurableValue} {...other}>
+        <ConfigProvider value={setConfigurableValue}>{children}</ConfigProvider>
+      </Provider>
+    );
+  };
 
-export type ConfigurableContextProps<ContextType extends BaseContextType> = {
-  context: Context<ContextType>;
-  defaultValue: ContextType | undefined;
+  return {
+    ValueContext,
+    ConfigContext,
+    Consumer,
+    Provider: EnhancedValueProvider,
+  };
 };
 
-export const ConfigurableContext: FC<ConfigurableContextProps<BaseContextType>> = <
-  ContextType extends BaseContextType
->({
-  context,
-  defaultValue,
-  children,
-}: PropsWithChildren<ContextType>) => {
-  const { Provider } = context;
-  const configurableContextMap: ConfigurableContextContextType<ContextType> =
-    useContext<ConfigurableContextContextType<ContextType>>(
-      ConfigurableContextContext as Context<ConfigurableContextContextType<ContextType>>
-    ) || new Map<Context<ContextType>, ConfigurableContextSetter<ContextType>>();
-  const [value, setValue] = useState<ContextType | undefined>(
-    typeof defaultValue === 'undefined' ? useContext<ContextType>(context) : defaultValue
-  );
-  const contextValueSetter = configurableContextMap.get(context) || setValue;
+export const useValueContext = <T extends BaseConfigurableContextType>(
+  configurableContext: ConfigurableContext<T>
+): T => {
+  const { ValueContext } = configurableContext;
 
-  configurableContextMap.set(context, contextValueSetter);
-
-  return (
-    <Provider value={value}>
-      <ConfigurableContextContextProvider value={configurableContextMap}>{children}</ConfigurableContextContextProvider>
-    </Provider>
-  );
+  return useContext<T>(ValueContext);
 };
 
-export default ConfigurableContext;
+export const useConfigContext = <T extends BaseConfigurableContextType>(
+  configurableContext: ConfigurableContext<T>
+): ConfigContextChangeHandler<T> => {
+  const { ConfigContext } = configurableContext;
 
-export type ConfigProps<ContextType extends BaseContextType> = {
-  context: Context<ContextType>;
-};
-
-const ConfigContext = createContext<ConfigurableContextPropSetter<BaseContextType> | undefined>(undefined);
-const { Provider: ConfigProvider } = ConfigContext;
-
-export const Config: FC<ConfigProps<BaseContextType>> = <ContextType extends BaseContextType>({
-  context,
-  children,
-}: PropsWithChildren<ContextType>) => {
-  const configurableContextMap: ConfigurableContextContextType<ContextType> = useContext<
-    ConfigurableContextContextType<ContextType>
-  >(ConfigurableContextContext as Context<ConfigurableContextContextType<ContextType>>);
-  const currentValue = useContext<ContextType>(context);
-  const setter = configurableContextMap ? configurableContextMap.get(context) : undefined;
-  const propSetter = useCallback<ConfigurableContextPropSetter<ContextType>>(
-    (name, value) => {
-      if (setter) {
-        setter({
-          ...currentValue,
-          [name]: value,
-        });
-      }
-    },
-    [setter, currentValue]
-  );
-
-  return <ConfigProvider value={propSetter}>{children}</ConfigProvider>;
-};
-
-export type SettingProps = {
-  name: string;
-  children: any;
-};
-
-export const Setting: FC<SettingProps> = ({ name, children }) => {
-  const propSetter = useContext<ConfigurableContextPropSetter<any> | undefined>(ConfigContext);
-
-  useEffect(() => {
-    if (propSetter) {
-      propSetter(name, children);
-    }
-  }, [propSetter, name, children]);
-
-  return null;
+  return useContext<ConfigContextChangeHandler<T>>(ConfigContext);
 };
