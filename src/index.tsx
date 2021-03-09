@@ -1,7 +1,21 @@
-import React, { Consumer, Context, createContext, FC, ProviderProps, useContext, useState } from 'react';
+import React, {
+  Consumer,
+  Context,
+  createContext,
+  FC,
+  PropsWithChildren,
+  ProviderProps,
+  ReactElement,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 
 export type BaseConfigurableContextType = Record<any, any>;
-export type ConfigContextChangeHandler<T extends BaseConfigurableContextType> = ((newValue: T) => void) | undefined;
+export type ConfigContextChangeHandlerSignature<T extends BaseConfigurableContextType> = (newValue: T) => void;
+export type ConfigContextChangeHandler<T extends BaseConfigurableContextType> =
+  | ConfigContextChangeHandlerSignature<T>
+  | undefined;
 
 export interface ConfigurableContext<T extends BaseConfigurableContextType> {
   ValueContext: Context<T>;
@@ -49,4 +63,37 @@ export const useConfigContext = <T extends BaseConfigurableContextType>(
   const { ConfigContext } = configurableContext;
 
   return useContext<ConfigContextChangeHandler<T>>(ConfigContext);
+};
+
+type KeysMatching<T, V> = { [K in keyof T]-?: T[K] extends V ? K : never }[keyof T];
+
+export type ConfigProps<T extends BaseConfigurableContextType> = {
+  configurableContext: ConfigurableContext<T>;
+  configBranch?: KeysMatching<T, BaseConfigurableContextType>;
+};
+
+export const Config = <T extends BaseConfigurableContextType>({
+  configurableContext,
+  configBranch,
+  children,
+}: PropsWithChildren<ConfigProps<T>>): ReactElement | null => {
+  const {
+    ConfigContext: { Provider: ConfigProvider },
+  } = configurableContext;
+  const value = useValueContext(configurableContext);
+  const setDirectConfigurableValue = useConfigContext(configurableContext);
+  const setConfigurableValue = useMemo<ConfigContextChangeHandler<any>>(
+    () =>
+      typeof configBranch === 'string' && configBranch && setDirectConfigurableValue
+        ? (newBranchValue: any) => {
+            setDirectConfigurableValue({
+              ...value,
+              [configBranch]: newBranchValue,
+            });
+          }
+        : setDirectConfigurableValue,
+    [configBranch, value, setDirectConfigurableValue]
+  );
+
+  return <ConfigProvider value={setConfigurableValue}>{children}</ConfigProvider>;
 };
