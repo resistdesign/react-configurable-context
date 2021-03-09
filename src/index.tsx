@@ -1,12 +1,14 @@
 import React, {
+  Children,
   Consumer,
   Context,
   createContext,
   FC,
-  PropsWithChildren,
+  Key,
   ProviderProps,
   ReactElement,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -57,43 +59,105 @@ export const useValueContext = <T extends BaseConfigurableContextType>(
   return useContext<T>(ValueContext);
 };
 
+const DefaultConfigurableContext = createConfigurableContext<any>({});
+
 export const useConfigContext = <T extends BaseConfigurableContextType>(
-  configurableContext: ConfigurableContext<T>
+  configurableContext?: ConfigurableContext<T>
 ): ConfigContextChangeHandler<T> => {
-  const { ConfigContext } = configurableContext;
+  const { ConfigContext } = configurableContext || DefaultConfigurableContext;
 
   return useContext<ConfigContextChangeHandler<T>>(ConfigContext);
 };
 
 type KeysMatching<T, V> = { [K in keyof T]-?: T[K] extends V ? K : never }[keyof T];
+type ConfigElement<T extends BaseConfigurableContextType> = ReactElement<
+  ConfigProps<T[KeysMatching<T, BaseConfigurableContextType>]>
+>;
+type SettingElement<T extends BaseConfigurableContextType> = {
+  type: keyof T,
+  props?: {
+    children?: T[keyof T];
+  };
+  key: Key | null
+};
 
 export type ConfigProps<T extends BaseConfigurableContextType> = {
   configurableContext: ConfigurableContext<T>;
   configBranch?: KeysMatching<T, BaseConfigurableContextType>;
+  children?: ConfigElement<T> | ConfigElement<T>[] | SettingElement<T> | SettingElement<T>[];
 };
 
 export const Config = <T extends BaseConfigurableContextType>({
   configurableContext,
   configBranch,
   children,
-}: PropsWithChildren<ConfigProps<T>>): ReactElement | null => {
+}: ConfigProps<T>): ReactElement | null => {
   const {
+    ValueContext: {Provider: ValueProvider},
     ConfigContext: { Provider: ConfigProvider },
   } = configurableContext;
-  const value = useValueContext(configurableContext);
+  const directValue = useValueContext(configurableContext);
   const setDirectConfigurableValue = useConfigContext(configurableContext);
+  const value = useMemo(() => typeof configBranch === 'string' ? typeof directValue === 'object' ? directValue[configBranch] : undefined : directValue, [
+    configBranch,
+    directValue
+  ]);
   const setConfigurableValue = useMemo<ConfigContextChangeHandler<any>>(
     () =>
-      typeof configBranch === 'string' && configBranch && setDirectConfigurableValue
+      typeof configBranch === 'string' ? setDirectConfigurableValue
         ? (newBranchValue: any) => {
             setDirectConfigurableValue({
-              ...value,
+              ...directValue,
               [configBranch]: newBranchValue,
             });
           }
-        : setDirectConfigurableValue,
-    [configBranch, value, setDirectConfigurableValue]
+        : setDirectConfigurableValue: setDirectConfigurableValue,
+    [configBranch, directValue, setDirectConfigurableValue]
   );
+  const {
+    settings,
+    otherChildren
+  } = useMemo(() => Children.toArray(children).reduce<{settings: Partial<T>, otherChildren: any[]}>((acc, c) => {
+    if(typeof c === 'object' && 'type' in c && typeof c.type === 'string'){
+      const {
+        props: {children: value} = {},
+      } = c;
 
-  return <ConfigProvider value={setConfigurableValue}>{children}</ConfigProvider>;
+      acc.settings[c.type as keyof T] = value;
+    }else{
+      acc.otherChildren.push(c);
+    }
+
+    return acc;
+  }, {settings: {}, otherChildren: []}), [children]);
+
+  useEffect(() => {
+    if(setConfigurableValue){
+      setConfigurableValue({
+        ...value,
+        ...settings
+      });
+    }
+  }, [value, setConfigurableValue, settings]);
+
+  return (
+    <ConfigProvider value={setConfigurableValue}>
+      <ValueProvider value={value as any}>
+        {otherChildren}
+      </ValueProvider>
+    </ConfigProvider>
+  );
 };
+
+export type SettingProps<T extends BaseConfigurableContextType> = {
+  name: keyof T;
+  children?: T[keyof T];
+};
+
+const c = { thing: 'stuff', other: {} };
+const p = (
+  <Config configurableContext={createConfigurableContext(c)}>
+    <thing>More!</thing>
+  </Config>
+);
+console.log(p);
