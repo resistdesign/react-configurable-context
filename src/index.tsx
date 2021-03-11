@@ -1,163 +1,45 @@
-import React, {
-  Children,
-  Consumer,
-  Context,
-  createContext,
-  FC,
-  Key,
-  ProviderProps,
-  ReactElement,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { Context, createContext, FC, PropsWithChildren, useCallback, useState } from 'react';
 
-export type BaseConfigurableContextType = Record<any, any>;
-export type ConfigContextChangeHandlerSignature<T extends BaseConfigurableContextType> = (newValue: T) => void;
-export type ConfigContextChangeHandler<T extends BaseConfigurableContextType> =
-  | ConfigContextChangeHandlerSignature<T>
-  | undefined;
+export type UpdateSettingHandler = (settingInstance: () => any, value: any) => void;
 
-export interface ConfigurableContext<T extends BaseConfigurableContextType> {
-  ValueContext: Context<T>;
-  ConfigContext: Context<ConfigContextChangeHandler<T>>;
-  Consumer: Consumer<T>;
-  Provider: FC<ProviderProps<T>>;
-}
+type ValueType = Map<any, any>;
+type ValueContext = Context<ValueType>;
+type OptionalUpdateSettingHandler = UpdateSettingHandler | undefined;
+type ConfigContext = Context<OptionalUpdateSettingHandler>;
 
-export const createConfigurableContext = <T extends BaseConfigurableContextType>(
-  defaultValue: T
-): ConfigurableContext<T> => {
-  const ValueContext = createContext<T>(defaultValue);
-  const { Consumer, Provider } = ValueContext;
-  const ConfigContext = createContext<ConfigContextChangeHandler<T>>(undefined);
-  const { Provider: ConfigProvider } = ConfigContext;
-  const EnhancedValueProvider: FC<ProviderProps<T>> = ({ value, children, ...other }) => {
-    const [configurableValue, setConfigurableValue] = useState<T>(value);
+export type ConfigProps = {};
 
-    return (
-      <Provider value={configurableValue} {...other}>
-        <ConfigProvider value={setConfigurableValue}>{children}</ConfigProvider>
-      </Provider>
-    );
-  };
-
-  return {
-    ValueContext,
-    ConfigContext,
-    Consumer,
-    Provider: EnhancedValueProvider,
-  };
+export type ConfigurableContextComponent = FC<ConfigProps> & {
+  readonly $$valueContext: ValueContext;
+  readonly $$configContext: ConfigContext;
 };
 
-export const useValueContext = <T extends BaseConfigurableContextType>(
-  configurableContext: ConfigurableContext<T>
-): T => {
-  const { ValueContext } = configurableContext;
+export const createConfigurableContext = (): ConfigurableContextComponent => {
+  const defaultMap = new Map();
+  const $$valueContext = createContext<ValueType>(defaultMap);
+  const $$configContext = createContext<OptionalUpdateSettingHandler>(undefined);
+  const { Provider: ValueProvider } = $$valueContext;
+  const { Provider: ConfigProvider } = $$configContext;
 
-  return useContext<T>(ValueContext);
-};
+  return Object.assign(
+    ({ children }: PropsWithChildren<ConfigProps>) => {
+      const [map, setMap] = useState(defaultMap);
+      const updateSetting = useCallback<UpdateSettingHandler>(
+        (settingInstance, value) => {
+          setMap(new Map(map).set(settingInstance, value));
+        },
+        [map, setMap]
+      );
 
-const DefaultConfigurableContext = createConfigurableContext<any>({});
-
-export const useConfigContext = <T extends BaseConfigurableContextType>(
-  configurableContext?: ConfigurableContext<T>
-): ConfigContextChangeHandler<T> => {
-  const { ConfigContext } = configurableContext || DefaultConfigurableContext;
-
-  return useContext<ConfigContextChangeHandler<T>>(ConfigContext);
-};
-
-type KeysMatching<T, V> = { [K in keyof T]-?: T[K] extends V ? K : never }[keyof T];
-type ConfigElement<T extends BaseConfigurableContextType> = ReactElement<
-  ConfigProps<T[KeysMatching<T, BaseConfigurableContextType>]>
->;
-type SettingElement<T extends BaseConfigurableContextType> = {
-  type: keyof T,
-  props?: {
-    children?: T[keyof T];
-  };
-  key: Key | null
-};
-
-export type ConfigProps<T extends BaseConfigurableContextType> = {
-  configurableContext: ConfigurableContext<T>;
-  configBranch?: KeysMatching<T, BaseConfigurableContextType>;
-  children?: ConfigElement<T> | ConfigElement<T>[] | SettingElement<T> | SettingElement<T>[];
-};
-
-export const Config = <T extends BaseConfigurableContextType>({
-  configurableContext,
-  configBranch,
-  children,
-}: ConfigProps<T>): ReactElement | null => {
-  const {
-    ValueContext: {Provider: ValueProvider},
-    ConfigContext: { Provider: ConfigProvider },
-  } = configurableContext;
-  const directValue = useValueContext(configurableContext);
-  const setDirectConfigurableValue = useConfigContext(configurableContext);
-  const value = useMemo(() => typeof configBranch === 'string' ? typeof directValue === 'object' ? directValue[configBranch] : undefined : directValue, [
-    configBranch,
-    directValue
-  ]);
-  const setConfigurableValue = useMemo<ConfigContextChangeHandler<any>>(
-    () =>
-      typeof configBranch === 'string' ? setDirectConfigurableValue
-        ? (newBranchValue: any) => {
-            setDirectConfigurableValue({
-              ...directValue,
-              [configBranch]: newBranchValue,
-            });
-          }
-        : setDirectConfigurableValue: setDirectConfigurableValue,
-    [configBranch, directValue, setDirectConfigurableValue]
-  );
-  const {
-    settings,
-    otherChildren
-  } = useMemo(() => Children.toArray(children).reduce<{settings: Partial<T>, otherChildren: any[]}>((acc, c) => {
-    if(typeof c === 'object' && 'type' in c && typeof c.type === 'string'){
-      const {
-        props: {children: value} = {},
-      } = c;
-
-      acc.settings[c.type as keyof T] = value;
-    }else{
-      acc.otherChildren.push(c);
+      return (
+        <ValueProvider value={map}>
+          <ConfigProvider value={updateSetting}>{children}</ConfigProvider>
+        </ValueProvider>
+      );
+    },
+    {
+      $$valueContext,
+      $$configContext,
     }
-
-    return acc;
-  }, {settings: {}, otherChildren: []}), [children]);
-
-  useEffect(() => {
-    if(setConfigurableValue){
-      setConfigurableValue({
-        ...value,
-        ...settings
-      });
-    }
-  }, [value, setConfigurableValue, settings]);
-
-  return (
-    <ConfigProvider value={setConfigurableValue}>
-      <ValueProvider value={value as any}>
-        {otherChildren}
-      </ValueProvider>
-    </ConfigProvider>
   );
 };
-
-export type SettingProps<T extends BaseConfigurableContextType> = {
-  name: keyof T;
-  children?: T[keyof T];
-};
-
-const c = { thing: 'stuff', other: {} };
-const p = (
-  <Config configurableContext={createConfigurableContext(c)}>
-    <thing>More!</thing>
-  </Config>
-);
-console.log(p);
