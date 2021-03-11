@@ -57,21 +57,33 @@ export type SettingProps = {
   children?: any;
 };
 
-export type SettingComponent = (props: SettingProps) => null;
+export type SettingComponent = ((props: SettingProps) => null) & {
+  readonly $$valueContext: ValueContext;
+};
 
 export const createSetting = (configurableContextComponent: ConfigurableContextComponent): SettingComponent => {
-  const settingComponent: SettingComponent = ({ children }) => {
-    const { $$configContext } = configurableContextComponent;
-    const updateSetting = useContext<OptionalUpdateSettingHandler>($$configContext);
+  const { $$valueContext, $$configContext } = configurableContextComponent;
+  const settingComponent: SettingComponent = Object.assign(
+    ({ children }: SettingProps) => {
+      const updateSetting = useContext<OptionalUpdateSettingHandler>($$configContext);
 
-    useEffect(() => {
-      if (updateSetting) {
-        updateSetting(settingComponent, children);
-      }
-    }, []);
+      useEffect(() => {
+        if (updateSetting) {
+          updateSetting(settingComponent, children);
+        }
+      }, []);
 
-    return null;
-  };
+      return null;
+    },
+    { $$valueContext }
+  );
 
   return settingComponent;
+};
+
+export const useSetting = (settingComponent: SettingComponent): any => {
+  const { $$valueContext } = settingComponent;
+  const map = useContext<ValueType>($$valueContext);
+
+  return map.get(settingComponent);
 };
