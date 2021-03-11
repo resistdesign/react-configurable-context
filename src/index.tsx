@@ -1,8 +1,17 @@
-import React, { Context, createContext, FC, PropsWithChildren, useCallback, useState } from 'react';
+import React, {
+  Context,
+  createContext,
+  FC,
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
-export type UpdateSettingHandler = (settingInstance: () => any, value: any) => void;
+export type UpdateSettingHandler = (settingInstance: SettingComponent, value: any) => void;
 
-type ValueType = Map<any, any>;
+type ValueType = Map<SettingComponent, any>;
 type ValueContext = Context<ValueType>;
 type OptionalUpdateSettingHandler = UpdateSettingHandler | undefined;
 type ConfigContext = Context<OptionalUpdateSettingHandler>;
@@ -15,7 +24,7 @@ export type ConfigurableContextComponent = FC<ConfigProps> & {
 };
 
 export const createConfigurableContext = (): ConfigurableContextComponent => {
-  const defaultMap = new Map();
+  const defaultMap = new Map<SettingComponent, any>();
   const $$valueContext = createContext<ValueType>(defaultMap);
   const $$configContext = createContext<OptionalUpdateSettingHandler>(undefined);
   const { Provider: ValueProvider } = $$valueContext;
@@ -42,4 +51,27 @@ export const createConfigurableContext = (): ConfigurableContextComponent => {
       $$configContext,
     }
   );
+};
+
+export type SettingProps = {
+  children?: any;
+};
+
+export type SettingComponent = (props: SettingProps) => null;
+
+export const createSetting = (configurableContextComponent: ConfigurableContextComponent): SettingComponent => {
+  const settingComponent: SettingComponent = ({ children }) => {
+    const { $$configContext } = configurableContextComponent;
+    const updateSetting = useContext<OptionalUpdateSettingHandler>($$configContext);
+
+    useEffect(() => {
+      if (updateSetting) {
+        updateSetting(settingComponent, children);
+      }
+    }, []);
+
+    return null;
+  };
+
+  return settingComponent;
 };
