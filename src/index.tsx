@@ -83,7 +83,7 @@ export const createSetting = <T extends unknown = any>(
   return settingComponent;
 };
 
-export const useSetting = <T extends unknown = any>(settingComponent: SettingComponent<T>): T => {
+export const useSetting = <T extends unknown = any>(settingComponent: SettingComponent<T>): T | undefined => {
   const { $$valueContext } = settingComponent;
   const map = useContext<ValueType<any>>($$valueContext);
 
