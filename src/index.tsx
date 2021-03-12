@@ -35,7 +35,9 @@ export const createConfigurableContext = (): ConfigurableContextComponent => {
       const [map, setMap] = useState(defaultMap);
       const updateSetting = useCallback<UpdateSettingHandler<any>>(
         (settingInstance, value) => {
-          setMap(new Map(map).set(settingInstance, value));
+          if (map.get(settingInstance) !== value) {
+            setMap(new Map(map).set(settingInstance, value));
+          }
         },
         [map, setMap]
       );
@@ -73,7 +75,7 @@ export const createSetting = <T extends unknown = any>(
         if (updateSetting) {
           updateSetting(settingComponent, children);
         }
-      }, []);
+      }, [updateSetting, children]);
 
       return null;
     },
