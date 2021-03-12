@@ -35,11 +35,13 @@ const meta: Meta = {
   component: ConfigurableContextStory,
   argTypes: {
     settingNames: {
+      name: 'Setting Names',
       control: {
         type: 'array',
       },
     },
     settingValues: {
+      name: 'Setting Values',
       control: {
         type: 'array',
       },
