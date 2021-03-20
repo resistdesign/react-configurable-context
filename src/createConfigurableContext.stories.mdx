@@ -1,0 +1,22 @@
+import { Canvas, Meta, Story } from '@storybook/addon-docs/blocks';
+import { createConfigurableContext } from './index';
+
+<Meta title='createConfigurableContext' parameters={{ docsOnly: true }} />
+
+# createConfigurableContext
+
+```tsx
+import {createConfigurableContext} from './index';
+
+const ConfigurableContext = createConfigurableContext();
+```
+
+export const ConfigurableContext = createConfigurableContext();
+
+<Canvas>
+  <Story name='Basic Example'>
+    <ConfigurableContext>
+      Inside of a ConfigurableContext.
+    </ConfigurableContext>
+  </Story>
+</Canvas>

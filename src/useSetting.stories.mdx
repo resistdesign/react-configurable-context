@@ -1,0 +1,34 @@
+import { Canvas, Meta, Story, } from '@storybook/addon-docs/blocks';
+import { MySetting } from './createSetting.stories.mdx';
+import { ConfigurableContext } from './createConfigurableContext.stories.mdx';
+import { useSetting } from './index';
+
+<Meta title='useSetting' parameters={{ docsOnly: true }} />
+
+# useSetting
+
+## Usage
+
+```tsx
+import {useSetting} from './index';
+import {MySetting} from './createSetting.stories.mdx';
+
+const MyComponent = () => {
+  const settingValue = useSetting(MySetting);
+  return (<pre>MySetting is: {JSON.stringify(settingValue)}</pre>);
+};
+```
+
+export const MyComponent = () => {
+  const settingValue = useSetting(MySetting);
+  return (<pre>MySetting is: {JSON.stringify(settingValue)}</pre>);
+};
+
+<Canvas>
+  <Story name='Basic Example'>
+    <ConfigurableContext>
+      <MySetting>ABRACADABRA!</MySetting>
+      <MyComponent />
+    </ConfigurableContext>
+  </Story>
+</Canvas>
