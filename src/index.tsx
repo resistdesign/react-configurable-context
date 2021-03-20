@@ -23,7 +23,9 @@ export type ConfigurableContextComponent = FC<ConfigProps> & {
   readonly $$configContext: ConfigContext<any>;
 };
 
-export const createConfigurableContext = (): ConfigurableContextComponent => {
+export const createConfigurableContext = (
+  displayName: string = 'ConfigurableContext'
+): ConfigurableContextComponent => {
   const defaultMap = new Map<SettingComponent<any>, any>();
   const $$valueContext = createContext<ValueType<any>>(defaultMap);
   const $$configContext = createContext<OptionalUpdateSettingHandler<any>>(undefined);
@@ -51,6 +53,7 @@ export const createConfigurableContext = (): ConfigurableContextComponent => {
     {
       $$valueContext,
       $$configContext,
+      displayName,
     }
   );
 };
@@ -64,7 +67,8 @@ export type SettingComponent<T> = ((props: SettingProps<T>) => null) & {
 };
 
 export const createSetting = <T extends unknown = any>(
-  configurableContextComponent: ConfigurableContextComponent
+  configurableContextComponent: ConfigurableContextComponent,
+  displayName: string = 'Setting'
 ): SettingComponent<T> => {
   const { $$valueContext, $$configContext } = configurableContextComponent;
   const settingComponent: SettingComponent<T> = Object.assign(
@@ -79,7 +83,7 @@ export const createSetting = <T extends unknown = any>(
 
       return null;
     },
-    { $$valueContext }
+    { $$valueContext, displayName }
   );
 
   return settingComponent;

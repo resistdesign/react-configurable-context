@@ -1,49 +1,41 @@
-import React, { FC, Fragment, useMemo } from 'react';
+import React, { FC } from 'react';
 import { Meta, Story } from '@storybook/react';
-import { createConfigurableContext, createSetting, SettingComponent, useSetting } from '../src';
+import { createConfigurableContext, createSetting, useSetting } from '../src';
 
-const ConfigurableContext = createConfigurableContext();
-const SettingComp: FC<{ name: string; setting: SettingComponent<any> }> = ({ name = '', setting }) => {
-  const value = useSetting(setting);
+const ConfigurableContext = createConfigurableContext('MyConfigurableContext');
+const BackgroundColor = createSetting(ConfigurableContext, 'BackgroundColor');
+const Size = createSetting(ConfigurableContext, 'Size');
+const BoxWithUseSetting: FC = ({}) => {
+  const backgroundColor = useSetting(BackgroundColor);
+  const size = useSetting(Size);
 
   return (
-    <div>
-      The value for "{name}" is "{value}".
+    <div
+      style={{
+        backgroundColor,
+        width: `${size}em`,
+        height: `${size}em`,
+      }}
+    >
+      &nbsp;
     </div>
-  );
-};
-
-type ConfigurableContextStoriesProps = { settingNames: string[]; settingValues: string[] };
-
-const ConfigurableContextStory: FC<ConfigurableContextStoriesProps> = ({ settingNames = [], settingValues = [] }) => {
-  const settings = useMemo(() => settingNames.map(() => createSetting(ConfigurableContext)), [settingNames]);
-
-  return (
-    <ConfigurableContext>
-      {settings.map((CurrentSetting, index) => (
-        <Fragment key={`SettingSet:${index}`}>
-          <CurrentSetting>{settingValues[index]}</CurrentSetting>
-          <SettingComp name={settingNames[index]} setting={CurrentSetting} />
-        </Fragment>
-      ))}
-    </ConfigurableContext>
   );
 };
 
 const meta: Meta = {
   title: 'ConfigurableContext',
-  component: ConfigurableContextStory,
+  component: ConfigurableContext,
   argTypes: {
-    settingNames: {
-      name: 'Setting Names',
+    backgroundColor: {
+      name: 'Background Color',
       control: {
-        type: 'array',
+        type: 'color',
       },
     },
-    settingValues: {
-      name: 'Setting Values',
+    size: {
+      name: 'Size',
       control: {
-        type: 'array',
+        type: 'number',
       },
     },
   },
@@ -54,13 +46,19 @@ const meta: Meta = {
 
 export default meta;
 
-const Template: Story<ConfigurableContextStoriesProps> = (args) => <ConfigurableContextStory {...args} />;
+const Template: Story<{ backgroundColor: string; size: number }> = ({ backgroundColor, size }) => (
+  <ConfigurableContext>
+    <BackgroundColor>{backgroundColor}</BackgroundColor>
+    <Size>{size}</Size>
+    <BoxWithUseSetting />
+  </ConfigurableContext>
+);
 
 // By passing using the Args format for exported stories, you can control the props for a component for reuse in a test
 // https://storybook.js.org/docs/react/workflows/unit-testing
 export const Default = Template.bind({});
 
 Default.args = {
-  settingNames: ['One', 'Two', 'Three'],
-  settingValues: ['uno', 'dos', 'tres'],
+  backgroundColor: '#ba1eb7',
+  size: 5,
 };
