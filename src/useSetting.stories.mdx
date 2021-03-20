@@ -10,9 +10,10 @@ import { useSetting } from './index';
 ## Usage
 
 ```tsx
-import {useSetting} from './index';
-import {MySetting} from './createSetting.stories.mdx';
+import {createConfigurableContext, createSetting, useSetting} from './index';
 
+const ConfigurableContext = createConfigurableContext();
+const MySetting = createSetting(ConfigurableContext);
 const MyComponent = () => {
   const settingValue = useSetting(MySetting);
   return (<pre>MySetting is: {JSON.stringify(settingValue)}</pre>);
