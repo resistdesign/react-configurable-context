@@ -2,10 +2,13 @@ import React, { FC } from 'react';
 import { Meta, Story } from '@storybook/react';
 import { createConfigurableContext, createSetting, useSetting } from '../src';
 
-const ConfigurableContext = createConfigurableContext();
-const BackgroundColor = createSetting(ConfigurableContext);
-const Size = createSetting(ConfigurableContext);
-const BoxWithUseSetting: FC = ({}) => {
+const ThemeContext = createConfigurableContext();
+ThemeContext.displayName = 'ThemeContext';
+const BackgroundColor = createSetting(ThemeContext);
+BackgroundColor.displayName = 'BackgroundColor';
+const Size = createSetting(ThemeContext);
+Size.displayName = 'Size';
+const ThemedBox: FC = ({}) => {
   const backgroundColor = useSetting(BackgroundColor);
   const size = useSetting(Size);
 
@@ -21,10 +24,11 @@ const BoxWithUseSetting: FC = ({}) => {
     </div>
   );
 };
+ThemedBox.displayName = 'ThemedBox';
 
 const meta: Meta = {
   title: 'ConfigurableContext',
-  component: ConfigurableContext,
+  component: ThemeContext,
   argTypes: {
     backgroundColor: {
       name: 'Background Color',
@@ -47,11 +51,11 @@ const meta: Meta = {
 export default meta;
 
 const Template: Story<{ backgroundColor: string; size: number }> = ({ backgroundColor, size }) => (
-  <ConfigurableContext>
+  <ThemeContext>
     <BackgroundColor>{backgroundColor}</BackgroundColor>
     <Size>{size}</Size>
-    <BoxWithUseSetting />
-  </ConfigurableContext>
+    <ThemedBox />
+  </ThemeContext>
 );
 
 // By passing using the Args format for exported stories, you can control the props for a component for reuse in a test
