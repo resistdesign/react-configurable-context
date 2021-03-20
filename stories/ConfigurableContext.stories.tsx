@@ -2,9 +2,9 @@ import React, { FC } from 'react';
 import { Meta, Story } from '@storybook/react';
 import { createConfigurableContext, createSetting, useSetting } from '../src';
 
-const ConfigurableContext = createConfigurableContext('MyConfigurableContext');
-const BackgroundColor = createSetting(ConfigurableContext, 'BackgroundColor');
-const Size = createSetting(ConfigurableContext, 'Size');
+const ConfigurableContext = createConfigurableContext();
+const BackgroundColor = createSetting(ConfigurableContext);
+const Size = createSetting(ConfigurableContext);
 const BoxWithUseSetting: FC = ({}) => {
   const backgroundColor = useSetting(BackgroundColor);
   const size = useSetting(Size);

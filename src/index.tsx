@@ -1,13 +1,4 @@
-import React, {
-  Context,
-  createContext,
-  FC,
-  PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import React, { Context, createContext, FC, useCallback, useContext, useEffect, useState } from 'react';
 
 export type UpdateSettingHandler<T> = (settingInstance: SettingComponent<T>, value: T) => void;
 
@@ -23,68 +14,60 @@ export type ConfigurableContextComponent = FC<ConfigProps> & {
   readonly $$configContext: ConfigContext<any>;
 };
 
-export const createConfigurableContext = (
-  displayName: string = 'ConfigurableContext'
-): ConfigurableContextComponent => {
+export const createConfigurableContext = (): ConfigurableContextComponent => {
   const defaultMap = new Map<SettingComponent<any>, any>();
   const $$valueContext = createContext<ValueType<any>>(defaultMap);
   const $$configContext = createContext<OptionalUpdateSettingHandler<any>>(undefined);
   const { Provider: ValueProvider } = $$valueContext;
   const { Provider: ConfigProvider } = $$configContext;
+  const ConfigurableContext: FC<ConfigProps> = ({ children }) => {
+    const [map, setMap] = useState(defaultMap);
+    const updateSetting = useCallback<UpdateSettingHandler<any>>(
+      (settingInstance, value) => {
+        if (map.get(settingInstance) !== value) {
+          setMap(new Map(map).set(settingInstance, value));
+        }
+      },
+      [map, setMap]
+    );
 
-  return Object.assign(
-    ({ children }: PropsWithChildren<ConfigProps>) => {
-      const [map, setMap] = useState(defaultMap);
-      const updateSetting = useCallback<UpdateSettingHandler<any>>(
-        (settingInstance, value) => {
-          if (map.get(settingInstance) !== value) {
-            setMap(new Map(map).set(settingInstance, value));
-          }
-        },
-        [map, setMap]
-      );
+    return (
+      <ValueProvider value={map}>
+        <ConfigProvider value={updateSetting}>{children}</ConfigProvider>
+      </ValueProvider>
+    );
+  };
 
-      return (
-        <ValueProvider value={map}>
-          <ConfigProvider value={updateSetting}>{children}</ConfigProvider>
-        </ValueProvider>
-      );
-    },
-    {
-      $$valueContext,
-      $$configContext,
-      displayName,
-    }
-  );
+  return Object.assign(ConfigurableContext, {
+    $$valueContext,
+    $$configContext,
+  });
 };
 
 export type SettingProps<T> = {
   children: T;
 };
 
-export type SettingComponent<T> = ((props: SettingProps<T>) => null) & {
+export type SettingComponent<T> = FC<SettingProps<T>> & {
   readonly $$valueContext: ValueContext<T>;
 };
 
 export const createSetting = <T extends unknown = any>(
-  configurableContextComponent: ConfigurableContextComponent,
-  displayName: string = 'Setting'
+  configurableContextComponent: ConfigurableContextComponent
 ): SettingComponent<T> => {
   const { $$valueContext, $$configContext } = configurableContextComponent;
-  const settingComponent: SettingComponent<T> = Object.assign(
-    ({ children }: SettingProps<T>) => {
-      const updateSetting = useContext<OptionalUpdateSettingHandler<T>>($$configContext);
+  const Setting: FC<SettingProps<T>> = ({ children }) => {
+    const updateSetting = useContext<OptionalUpdateSettingHandler<T>>($$configContext);
 
-      useEffect(() => {
-        if (updateSetting) {
-          updateSetting(settingComponent, children);
-        }
-      }, [updateSetting, children]);
+    useEffect(() => {
+      if (updateSetting) {
+        updateSetting(settingComponent, children);
+      }
+    }, [updateSetting, children]);
 
-      return null;
-    },
-    { $$valueContext, displayName }
-  );
+    return null;
+  };
+  const settingComponent: SettingComponent<T> = Object.assign(Setting, { $$valueContext });
 
   return settingComponent;
 };
