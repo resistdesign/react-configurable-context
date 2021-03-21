@@ -20,8 +20,8 @@
     "prepare": "tsdx build",
     "size": "size-limit",
     "analyze": "size-limit --why",
-    "storybook": "start-storybook -p 6006",
-    "build-storybook": "build-storybook"
+    "storybook": "start-storybook -p 6006 --no-manager-cache",
+    "build-storybook": "build-storybook --no-manager-cache"
   },
   "peerDependencies": {
     "react": ">=16"
@@ -58,6 +58,7 @@
     "@storybook/addon-links": "^6.1.21",
     "@storybook/addons": "^6.1.21",
     "@storybook/react": "^6.1.21",
+    "@storybook/theming": "^6.1.21",
     "@testing-library/react": "^11.2.5",
     "@types/react": "^17.0.2",
     "@types/react-dom": "^17.0.1",
