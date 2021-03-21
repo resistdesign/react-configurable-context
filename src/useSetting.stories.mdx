@@ -1,7 +1,5 @@
 import { Canvas, Meta, Story, } from '@storybook/addon-docs/blocks';
-import { MySetting } from './createSetting.stories.mdx';
-import { ConfigurableContext } from './createConfigurableContext.stories.mdx';
-import { useSetting } from './index';
+import { createConfigurableContext, createSetting, useSetting } from './index';
 
 <Meta title='useSetting' parameters={{ docsOnly: true }} />
 
@@ -16,9 +14,14 @@ const ConfigurableContext = createConfigurableContext();
 const MySetting = createSetting(ConfigurableContext);
 const MyComponent = () => {
   const settingValue = useSetting(MySetting);
+
   return (<pre>MySetting is: {JSON.stringify(settingValue)}</pre>);
 };
 ```
+
+export const ConfigurableContext = createConfigurableContext();
+
+export const MySetting = createSetting(ConfigurableContext);
 
 export const MyComponent = () => {
   const settingValue = useSetting(MySetting);

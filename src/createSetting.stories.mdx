@@ -1,6 +1,5 @@
 import { Canvas, Meta, Story } from '@storybook/addon-docs/blocks';
-import { createSetting } from './index';
-import { ConfigurableContext } from './createConfigurableContext.stories.mdx';
+import { createConfigurableContext, createSetting } from './index';
 
 <Meta title='createSetting' parameters={{ docsOnly: true }} />
 
@@ -12,6 +11,8 @@ import {createConfigurableContext, createSetting} from './index';
 const ConfigurableContext = createConfigurableContext();
 const MySetting = createSetting(ConfigurableContext);
 ```
+
+export const ConfigurableContext = createConfigurableContext();
 
 export const MySetting = createSetting(ConfigurableContext);
 
