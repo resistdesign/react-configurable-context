@@ -1,3 +1,3 @@
-# React Configurable Context
+# SRACL: Standard, Reusable, Application Component Library
 
-Use JSX to declare and configure a React Context.
+A basis for highly extensible UI components.

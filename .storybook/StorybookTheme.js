@@ -3,7 +3,7 @@ import Logo from './public/sracl.svg';
 
 export default create({
   base: 'dark',
-  brandTitle: 'SRACL',
+  brandTitle: 'SRACL: Standard, Reusable, Application Component Library',
   brandUrl: 'https://sracl.resist.design',
   brandImage: Logo,
 });
